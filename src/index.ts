@@ -1,34 +1,41 @@
 import { Elysia, t } from "elysia";
-import { staticPlugin } from '@elysiajs/static'
 import { login, create_voucher, get_voucherGroup } from './omada_callouts'
 
-const cache : { [key: string]: any } = {}
+
+const cache : {[key: string]: {
+  token: string,
+  cookie: string,
+  timeout: number,
+  isvalid: Function
+}} = {}
 const cache_timeout = 20 * 60 * 1000 // first digit is minutes
 
 const loginStatus = async (cid:string, siteId:string, name:string, password:string) => {
   const { ok, token, cookie, msg } = await login(cid, JSON.stringify({ name, password }))
-  if (!ok) return { ok, error: msg }
+  if (!ok) return { hasError: !ok, msg }
 
-  cache[cid] = { ...cache[cid], [siteId]: { token, cookie, timeout: Date.now(), isvalid: function() {return Date.now() - this.timeout < cache_timeout} }}
-  return { ok, token, cookie }
+  cache[`${cid}-${siteId}-${name}`] = { token, cookie, timeout: Date.now(), isvalid: function() { return Date.now() - this.timeout < cache_timeout }}
+
+  return cache[`${cid}-${siteId}-${name}`]
 }
 
 const app = new Elysia()
-  .use(staticPlugin())
   .onError(({ error, set }) => {
     set.status = 500
     return error
   })
   .post('/voucher', async ({ body }) => {
     const { cid, siteId, username, password  } = body
-
+    let _cache = cache[`${cid}-${siteId}-${username}`]
+    
     // Do an initial setup
-    if (!cache[cid]?.[siteId]?.isvalid) {
-        const { ok, error } = await loginStatus(cid, siteId, username, password)
-        if (!ok) throw new Error(error)
+    if (!_cache?.isvalid()) {
+        const result:any = await loginStatus(cid, siteId, username, password)
+        if (result.hasError) throw new Error(result.msg)
+        _cache = result
     }
 
-    const { token, cookie } = cache[cid][siteId]
+    const { token, cookie } = _cache
     let new_voucher:any = await create_voucher(cid, siteId, token, cookie, body)
 
     if (new_voucher?.errorCode != 0) throw new Error(new_voucher.msg)
