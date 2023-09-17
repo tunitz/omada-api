@@ -1,7 +1,6 @@
 import { Elysia, t } from "elysia";
 import { login, create_voucher, get_voucherGroup } from './omada_callouts'
 
-
 const cache : {[key: string]: {
   token: string,
   cookie: string,
@@ -61,4 +60,4 @@ const app = new Elysia()
     })
   })
   .get('/install', () => Bun.file('public/install.sh'))
-  .listen(3000);
+  .listen(process?.env?.PORT || 3000);
