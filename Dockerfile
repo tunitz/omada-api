@@ -12,21 +12,12 @@ WORKDIR /app
 # Set production environment
 ENV NODE_ENV="production"
 
-# Throw-away build stage to reduce size of final image
-FROM base as build
+COPY src src
+COPY public public
+COPY package.json ./
 
-COPY --link bun.lockb package.json ./
 RUN bun run compile
-
-# Copy application code
-COPY --link . .
-
-# Final stage for app image
-FROM base
-
-# Copy built application
-COPY --from=build /app /app
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 3000
-CMD [ "bun", "src/index.js" ]
+CMD [ "bun", "build/index.js" ]
