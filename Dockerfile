@@ -12,6 +12,8 @@ WORKDIR /app
 # Set production environment
 ENV NODE_ENV="production"
 
+RUN bun run compile
+
 COPY build src
 COPY public public
 
