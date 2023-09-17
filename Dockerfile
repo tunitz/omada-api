@@ -17,6 +17,7 @@ FROM base as build
 
 COPY --link bun.lockb package.json ./
 COPY --link src src
+COPY --link public public
 RUN bun install --ci
 RUN bun run compile
 
