@@ -15,7 +15,8 @@ ENV NODE_ENV="production"
 # Throw-away build stage to reduce size of final image
 FROM base as build
 
-COPY --link bun.lockb package.json src public ./
+COPY --link bun.lockb package.json ./
+COPY --link src src
 RUN bun install --ci
 RUN bun run compile
 
@@ -27,7 +28,7 @@ FROM base
 
 # Copy built application
 COPY --from=build /app/build /app/build
-COPy --from=build /app/public /app/public
+COPY --from=build /app/public /app/public
 
 
 
