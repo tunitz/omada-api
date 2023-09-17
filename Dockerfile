@@ -12,11 +12,25 @@ WORKDIR /app
 # Set production environment
 ENV NODE_ENV="production"
 
-COPY src src
-COPY public public
-COPY package.json ./
+# Throw-away build stage to reduce size of final image
+FROM base as build
 
+COPY --link bun.lockb package.json src public ./
+RUN bun install --ci
 RUN bun run compile
+
+# Copy application code
+COPY --link . .
+
+# Final stage for app image
+FROM base
+
+# Copy built application
+COPY --from=build /app/build /app/build
+COPy --from=build /app/public /app/public
+
+
+
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 3000
